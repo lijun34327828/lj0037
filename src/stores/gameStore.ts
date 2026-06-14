@@ -18,6 +18,7 @@ interface GameState {
   highScore: number;
   shotsRemaining: number | null;
   nextColor: BubbleColor;
+  previewColor: BubbleColor;
   levelConfig: LevelConfig | null;
   isPaused: boolean;
   isGameOver: boolean;
@@ -33,6 +34,7 @@ interface GameState {
   setHighScore: (score: number) => void;
   setShotsRemaining: (shots: number | null) => void;
   setNextColor: (color: BubbleColor) => void;
+  setPreviewColor: (color: BubbleColor) => void;
   setLevelConfig: (config: LevelConfig) => void;
   setPaused: (paused: boolean) => void;
   setGameOver: (over: boolean) => void;
@@ -51,6 +53,7 @@ const initialState = {
   highScore: 0,
   shotsRemaining: null,
   nextColor: 'red' as BubbleColor,
+  previewColor: 'orange' as BubbleColor,
   levelConfig: null,
   isPaused: false,
   isGameOver: false,
@@ -70,6 +73,7 @@ export const useGameStore = create<GameState>((set) => ({
   setHighScore: (highScore) => set({ highScore }),
   setShotsRemaining: (shotsRemaining) => set({ shotsRemaining }),
   setNextColor: (nextColor) => set({ nextColor }),
+  setPreviewColor: (previewColor) => set({ previewColor }),
   setLevelConfig: (levelConfig) => set({ levelConfig }),
   setPaused: (isPaused) => set({ isPaused }),
   setGameOver: (isGameOver) => set({ isGameOver }),

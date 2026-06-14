@@ -65,11 +65,13 @@ export default function Game() {
   const [trajectory, setTrajectory] = useState<Array<{ x: number; y: number }>>([]);
   const [trajectoryProgress, setTrajectoryProgress] = useState(0);
   const [eliminatingCells, setEliminatingCells] = useState<BubbleCell[]>([]);
+  const [eliminationProgress, setEliminationProgress] = useState(0);
 
   const descentIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const animFrameRef = useRef<number>(0);
   const shootAnimRef = useRef<number>(0);
   const particleFrameRef = useRef<number>(0);
+  const eliminationAnimRef = useRef<number>(0);
   const isMountedRef = useRef(true);
 
   const initGame = useCallback(async (level?: number) => {
@@ -78,6 +80,7 @@ export default function Game() {
       if (!isMountedRef.current) return;
       store.setGrid(result.grid);
       store.setNextColor(result.nextColor);
+      store.setPreviewColor(result.previewColor);
       store.setLevelConfig(result.levelConfig);
       store.setScore(result.score);
       store.setShotsRemaining(result.shotsRemaining);
@@ -146,6 +149,7 @@ export default function Game() {
       cancelAnimationFrame(animFrameRef.current);
       cancelAnimationFrame(shootAnimRef.current);
       cancelAnimationFrame(particleFrameRef.current);
+      cancelAnimationFrame(eliminationAnimRef.current);
     };
   }, []);
 
@@ -220,6 +224,7 @@ export default function Game() {
         levelConfig: state.levelConfig,
         shotsRemaining: state.shotsRemaining,
         score: state.score,
+        previewColor: state.previewColor,
       });
 
       if (!isMountedRef.current) return;
@@ -243,24 +248,40 @@ export default function Game() {
           const allEliminated = [...result.eliminated, ...result.floatingEliminated];
           if (allEliminated.length > 0) {
             setEliminatingCells(allEliminated);
+            setEliminationProgress(0);
             const newParticles = spawnParticles(allEliminated);
             const currentParticles = useGameStore.getState().particles;
             store.setParticles([...currentParticles, ...newParticles]);
+
+            const elimDuration = 500;
+            const elimStart = performance.now();
+            const animateElimination = () => {
+              const elapsed = performance.now() - elimStart;
+              const progress = Math.min(elapsed / elimDuration, 1);
+              setEliminationProgress(progress);
+
+              if (progress < 1) {
+                eliminationAnimRef.current = requestAnimationFrame(animateElimination);
+              } else {
+                if (isMountedRef.current) {
+                  setEliminatingCells([]);
+                  setEliminationProgress(0);
+                }
+              }
+            };
+            eliminationAnimRef.current = requestAnimationFrame(animateElimination);
           }
 
           store.setGrid(result.updatedGrid);
           store.setScore(result.totalScore);
           store.setShotsRemaining(result.shotsRemaining);
           store.setNextColor(result.nextColor);
+          store.setPreviewColor(result.previewColor);
           store.setGameOver(result.gameOver);
           store.setLevelComplete(result.levelComplete);
           store.setShooting(false);
           setTrajectory([]);
           setTrajectoryProgress(0);
-
-          setTimeout(() => {
-            if (isMountedRef.current) setEliminatingCells([]);
-          }, 300);
         }
       };
 
@@ -363,6 +384,7 @@ export default function Game() {
           trajectory={trajectory}
           trajectoryProgress={trajectoryProgress}
           eliminatingCells={eliminatingCells}
+          eliminationProgress={eliminationProgress}
         />
         <GameHUD />
         <GameOverlay />

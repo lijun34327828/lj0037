@@ -31,11 +31,13 @@ export interface ShootResult {
   gameOver: boolean;
   levelComplete: boolean;
   nextColor: BubbleColor;
+  previewColor: BubbleColor;
 }
 
 export interface GameStartResult {
   grid: BubbleCell[];
   nextColor: BubbleColor;
+  previewColor: BubbleColor;
   levelConfig: LevelConfig;
   score: number;
   shotsRemaining: number | null;

@@ -12,11 +12,13 @@ router.post('/start', async (req: Request, res: Response): Promise<void> => {
   const levelConfig = getLevelConfig(level);
   const grid = generateInitialGrid(level);
   const nextColor = getRandomColor(levelConfig.colorCount);
+  const previewColor = getRandomColor(levelConfig.colorCount);
   const shotsRemaining = levelConfig.maxShots;
 
   res.json({
     grid,
     nextColor,
+    previewColor,
     levelConfig,
     score: 0,
     shotsRemaining,
@@ -24,13 +26,14 @@ router.post('/start', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.post('/shoot', async (req: Request, res: Response): Promise<void> => {
-  const { grid, angle, shootColor, levelConfig, shotsRemaining, score } = req.body as {
+  const { grid, angle, shootColor, levelConfig, shotsRemaining, score, previewColor } = req.body as {
     grid: BubbleCell[];
     angle: number;
     shootColor: string;
     levelConfig: LevelConfig;
     shotsRemaining: number | null;
     score: number;
+    previewColor?: string;
   };
 
   const { trajectory, landedPosition } = calculateTrajectory(angle, grid);
@@ -53,7 +56,8 @@ router.post('/shoot', async (req: Request, res: Response): Promise<void> => {
   const gameOver = updatedGrid.some(b => b.position.row >= 18) || (newShotsRemaining !== null && newShotsRemaining <= 0 && updatedGrid.length > 0);
   const levelComplete = updatedGrid.length === 0;
 
-  const nextColor = getRandomColor(levelConfig.colorCount);
+  const nextColor = previewColor ? previewColor as BubbleCell['color'] : getRandomColor(levelConfig.colorCount);
+  const newPreviewColor = getRandomColor(levelConfig.colorCount);
 
   res.json({
     trajectory,
@@ -67,6 +71,7 @@ router.post('/shoot', async (req: Request, res: Response): Promise<void> => {
     gameOver,
     levelComplete,
     nextColor,
+    previewColor: newPreviewColor,
   });
 });
 

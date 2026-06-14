@@ -16,6 +16,7 @@ export async function shootBubble(params: {
   levelConfig: LevelConfig;
   shotsRemaining: number | null;
   score: number;
+  previewColor: BubbleColor;
 }) {
   const res = await fetch('/api/game/shoot', {
     method: 'POST',

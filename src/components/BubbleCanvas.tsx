@@ -53,14 +53,62 @@ interface BubbleCanvasProps {
   trajectory: Array<{ x: number; y: number }>;
   trajectoryProgress: number;
   eliminatingCells: BubbleCell[];
+  eliminationProgress: number;
 }
 
-export default function BubbleCanvas({ trajectory, trajectoryProgress, eliminatingCells }: BubbleCanvasProps) {
+function drawBubbleWithScale(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  color: BubbleColor,
+  scale: number,
+  alpha: number,
+  flashAmount: number,
+) {
+  const [c1, c2] = COLOR_MAP[color];
+  const radius = BUBBLE_RADIUS * scale;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  const shadow = ctx.createRadialGradient(x, y, radius * 0.5, x, y + 2, radius * 1.3);
+  shadow.addColorStop(0, 'rgba(0,0,0,0.3)');
+  shadow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.arc(x, y + 2, radius * 1.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  const grad = ctx.createRadialGradient(x - 3 * scale, y - 3 * scale, 2 * scale, x, y, radius);
+  grad.addColorStop(0, c1);
+  grad.addColorStop(1, c2);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (flashAmount > 0) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${flashAmount})`;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.arc(x - 4 * scale, y - 5 * scale, 4 * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+export default function BubbleCanvas({ trajectory, trajectoryProgress, eliminatingCells, eliminationProgress }: BubbleCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animFrameRef = useRef<number>(0);
 
   const grid = useGameStore((s) => s.grid);
   const nextColor = useGameStore((s) => s.nextColor);
+  const previewColor = useGameStore((s) => s.previewColor);
   const aimAngle = useGameStore((s) => s.aimAngle);
   const isShooting = useGameStore((s) => s.isShooting);
   const isPaused = useGameStore((s) => s.isPaused);
@@ -104,9 +152,13 @@ export default function BubbleCanvas({ trajectory, trajectoryProgress, eliminati
 
       for (const cell of eliminatingCells) {
         const { x, y } = gridToPixel(cell.position.row, cell.position.col);
-        ctx.globalAlpha = 0.4;
-        drawBubble(ctx, x, y, cell.color);
-        ctx.globalAlpha = 1;
+        const p = eliminationProgress;
+
+        const scale = 1 + p * 0.8;
+        const flash = p < 0.4 ? (p / 0.4) * 0.9 : (1 - (p - 0.4) / 0.6) * 0.9;
+        const alpha = p < 0.3 ? 1 : 1 - (p - 0.3) / 0.7;
+
+        drawBubbleWithScale(ctx, x, y, cell.color, scale, Math.max(0, alpha), Math.max(0, flash));
       }
 
       if (!isShooting && !isPaused) {
@@ -165,6 +217,18 @@ export default function BubbleCanvas({ trajectory, trajectoryProgress, eliminati
 
       if (!isShooting) {
         drawBubble(ctx, SHOOTER_X, SHOOTER_Y, nextColor);
+
+        const previewX = SHOOTER_X - 50;
+        const previewY = SHOOTER_Y - 25;
+        ctx.save();
+        ctx.globalAlpha = 0.85;
+        drawBubbleWithScale(ctx, previewX, previewY, previewColor, 0.65, 1, 0);
+        ctx.restore();
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.font = 'bold 9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('下一颗', previewX, previewY + 26);
       }
 
       for (const p of particles) {
@@ -185,7 +249,7 @@ export default function BubbleCanvas({ trajectory, trajectoryProgress, eliminati
     return () => {
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [grid, nextColor, aimAngle, isShooting, isPaused, trajectory, trajectoryProgress, eliminatingCells, particles]);
+  }, [grid, nextColor, previewColor, aimAngle, isShooting, isPaused, trajectory, trajectoryProgress, eliminatingCells, eliminationProgress, particles]);
 
   return (
     <canvas

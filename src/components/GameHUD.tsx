@@ -38,6 +38,12 @@ export default function GameHUD() {
         </div>
       </div>
 
+      <div className="absolute top-14 left-0 right-0 flex justify-center pointer-events-none">
+        <div className="px-3 py-1.5 rounded-full backdrop-blur-md bg-black/40 text-white text-xs opacity-80">
+          移动鼠标瞄准 · 点击发射 · 同色相连 ≥3 消除
+        </div>
+      </div>
+
       <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 pointer-events-auto">
         <button
           onClick={() => setPaused(true)}
